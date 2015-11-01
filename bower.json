@@ -1,0 +1,41 @@
+{
+  "name": "hb2",
+  "main": "hb2.js",
+  "version": "0.0.0",
+  "authors": [
+    "Damian Bushong <katana@odios.us>"
+  ],
+  "moduleType": [
+    "node"
+  ],
+  "license": "MIT License",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.4",
+    "bootstrap": "~3.3.6"
+  },
+  "overrides":{
+    "bootstrap": {
+        "main": ["dist/**/bootstrap.js", "dist/**/bootstrap.min.js", "dist/**/bootstrap.css", "dist/**/bootstrap.min.css", "dist/**/bootstrap.*.map", "fonts/glyphicons-halflings-*"],
+        "normalize": {
+            "js": ["*.js", "*.min.js", ""],
+            "css": ["*.min.css", "*.css", "*.css.map"],
+            "fonts": ["glyphicons-halflings-*"]
+        }
+    },
+    "jquery": {
+        "main": ["dist/**/jquery.js", "dist/**/jquery.min.js", "dist/**/jquery.min.map"],
+        "normalize": {
+            "js": ["*.js", "*.min.map"],
+            "css": ["*.min.css", "*.css", "*.css.map"]
+        }
+    }
+  }
+}

@@ -1,0 +1,51 @@
+doctype html
+html(lang='en')
+	head
+		meta(charset='utf-8')
+		meta(http-equiv='X-UA-Compatible', content='IE=edge')
+		meta(name='viewport', content='width=device-width, initial-scale=1')
+		title hb2
+		link(rel='stylesheet', href='/assets/css/bootstrap.min.css')
+		link(rel='stylesheet', href='/assets/css/hb2.css')
+		link(rel='shortcut icon', type='image/x-ico', href='favicon.ico')
+	body
+		.container-fluid
+			.row
+				.col-sm-3.col-md-2.sidebar
+					header
+						h1 hb2
+					form.nav-form
+						.input-group
+							input.form-control(type='text', placeholder='Search...', value=search)
+							.input-group-btn
+								button.btn.btn-default(type='submit' aria-label='Submit')
+									span.glyphicon.glyphicon-search
+					ul.nav.nav-sidebar
+						li
+							a(href='#') Account
+						li.active
+							a(href='#') Latest images
+							span.sr-only (current)
+						li
+							a(href='#') Tag list
+						li
+							a(href='#') Help
+
+				.col-sm-9.col-sm-offset-3.col-md-10.col-md-offset-2.main
+					block content
+						h2 Default page
+						p.lead This is a test of the emergency WAT system.  You should not ever see this page, unless things have been broken.
+		footer
+			div#ble
+				span.app= 'powered by ' + app.name
+				span.sep!= ' &bull; '
+				span.copyright!= app.copyright
+				if app.expose
+					span.sep!= ' &bull; '
+					span.test!= 'running ~~<MAGICBUILD>~~'
+			//div#nib.end!= '&#8756;'
+			div#nib
+				img(height='20px', src='/assets/images/logo.png')
+		script(src='/assets/js/jquery.js')
+		script(src='/assets/js/bootstrap.js')
+		script(src='/assets/js/hb2.js')

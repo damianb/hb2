@@ -1,0 +1,16 @@
+{
+	"app":{
+		"port": 1990,
+		"proxied": false,
+		"exposeInfo": true,
+		"cacheTemplates": false,
+		"maxWorkers": 1
+	},
+	"db":{
+		"host": "localhost",
+		"port": 3306,
+		"user": "",
+		"password": "",
+		"db": "",
+	}
+}

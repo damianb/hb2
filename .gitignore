@@ -1,0 +1,9 @@
+node_modules
+bower_components
+public/*
+config.json
+*.swp
+*.komodoproject
+*.sublime-project
+*.sublime-workspace
+*.db

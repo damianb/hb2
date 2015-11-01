@@ -1,0 +1,196 @@
+/*
+// project hb2
+// ---
+// @copyright (c) 2015 Damian Bushong <katana@odios.us>
+// @license MIT License
+//
+*/
+
+html, body {
+	height: 100%;
+}
+
+a {
+	color: #b73333;
+}
+a:focus, a:hover {
+	color: #7c2323;
+}
+
+/**
+ * todo: sane navigation for mobile
+ */
+
+/* Hide for mobile, show later */
+.sidebar {
+	display: none;
+}
+@media (min-width: 768px) {
+	.sidebar {
+		position: fixed;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 500;
+		display: block;
+		padding: 20px;
+		overflow-x: hidden;
+		overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
+		background-color: #f5f5f5;
+		/*border-right: 1px solid #dc4242;*/
+		/*border-right: 1px solid #ccc;*/
+	}
+}
+
+/* Sidebar navigation */
+.nav-sidebar {
+	margin-right: -21px; /* 20px padding + 1px border */
+	margin-bottom: 20px;
+	margin-left: -20px;
+	border-bottom: 1px solid #ddd;
+}
+.nav-sidebar > li {
+	border-top: 1px solid #ddd;
+}
+.nav-sidebar > li.active, .nav-sidebar > li.active + li {
+	/*border-bottom: 1px solid #b73333;*/
+	border-top: 1px solid #b73333;
+}
+.nav-sidebar > li:first-of-type {
+	border-top: 0px none transparent;
+}
+
+.nav-sidebar > li > a {
+	padding-right: 20px;
+	padding-left: 20px;
+}
+.nav-sidebar > .active > a,
+.nav-sidebar > .active > a:hover,
+.nav-sidebar > .active > a:focus {
+	color: #fff;
+	background-color: #ca4242;
+}
+
+.nav-form {
+	/* 20px padding + 1px border */
+	margin: 0 -21px 0 -20px;
+	padding: 10px;
+	border-bottom: 1px solid #ccc;
+	background-color: #eee;
+	box-shadow: -2px -3px 0px 0px rgba(33, 33, 33, 0.15);
+	position: relative;
+	z-index: 200;
+}
+
+.form-control:focus {
+	border-color: #e96666;
+	box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.075) inset, 0px 0px 8px rgba(233, 102, 102, 0.6);
+}
+
+/**
+ * header tweaks
+ */
+header {
+	/* 20px padding + 1px border */
+	margin: -20px -21px 0 -20px;
+	background-color: #ca4242;
+	/*border-bottom: 3px solid rgba(33, 33, 33, 0.15);*/
+	border-right: 1px solid rgba(33, 33, 33, 0.15);
+	z-index: 100;
+}
+
+header h1 {
+	padding: 20px;
+	margin: 0;
+	text-align: right;
+	color: #fff;
+	font-size: 30px;
+}
+
+/**
+ * footer tweaks
+ */
+
+footer {
+	position: fixed;
+	bottom: -2px;
+	right: -2px;
+	font-size: 14px;
+	color: #888;
+	cursor: default;
+	z-index: 5000;
+	background-color: #fff;
+	padding: 5px;
+	border-top-left-radius: 8px;
+	box-shadow: -2px -2px 2px 2px rgba(0, 0, 0, 0.3);
+}
+
+footer a {
+	cursor: pointer;
+}
+
+footer span.sep {
+	font-weight: bold;
+}
+
+footer div#nib, footer div#ble {
+	display: inline-block;
+}
+footer div#nib {
+	margin-right: 2px;
+	margin-bottom: 2px;
+	height: 20px;
+
+}
+
+/**
+ * random overrides
+ */
+a.thumbnail {
+	background-color: #fcfcfc;
+	margin: 0 auto;
+}
+a.thumbnail img {
+	border: 1px solid #e3e3e3;
+}
+a.thumbnail:hover {
+	border: 1px solid #e96666;
+}
+
+/*
+ * main content area
+ */
+
+.main {
+	position: absolute;
+	box-shadow: -1px 0px 0px 0px rgba(0, 0, 0, 0.2);
+	padding: 20px;
+	z-index: 1000;
+}
+@media (min-width: 768px) {
+	.main {
+		padding-right: 40px;
+		padding-left: 40px;
+	}
+}
+.main .page-header {
+	margin-top: 0;
+}
+
+.posts li.image {
+	margin: 0 auto 20px;
+	text-align: center;
+	height: 220px;
+	/*todo make height mobile-friendly*/
+}
+.posts img {
+	/*max-width: 200px;
+	max-height: 200px;*/
+}
+
+.posts li.image .size {
+	display: inline-block;
+	width: 160px;
+	margin: 5px auto;
+	font-size: 13px;
+}
