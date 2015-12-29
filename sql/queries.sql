@@ -139,3 +139,25 @@ INNER JOIN (
 	ON p.id = yestag.post_id
 WHERE notag.post_id IS NULL
 ;
+
+--
+-- meh
+--
+--
+SELECT p.*
+FROM vw_post p
+WHERE p.id IN(
+	SELECT DISTINCT pt.post_id
+	FROM post_tag pt
+	INNER JOIN tag t
+		ON t.id = pt.tag_id
+	WHERE t.id IN(1) -- %s
+	GROUP BY pt.post_id
+	HAVING COUNT(t.id) = 1 -- %d
+)
+AND p.id NOT IN(
+	SELECT pt.post_id
+	FROM post_tag pt
+	WHERE tag_id IN(2) -- %s
+)
+;

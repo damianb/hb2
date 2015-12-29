@@ -286,19 +286,19 @@ DROP TRIGGER IF EXISTS `tr__post_tag__ad`;
 SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='';
 DELIMITER //
 CREATE TRIGGER `tr__post_tag__ad` AFTER DELETE ON `post_tag` FOR EACH ROW BEGIN
--- 
+--
 -- handles decrementing the tag when we drop a post-tag association,
 --  thereby decreasing the number of times the given tag has been used.
--- 
+--
 UPDATE tag_count
 SET amount = amount - 1
 WHERE tag_id = old.tag_id;
 
--- 
+--
 -- updates modification time for posts when tags are removed
 -- currently disabled; might leave the "lmd" column alone to preserve meta-info,
 --  and just have a second "modified" column for reflecting modification date when any related post data changes
--- 
+--
 -- UPDATE post
 -- SET lmd = NOW()
 -- WHERE id = old.post_id;
@@ -312,19 +312,19 @@ DROP TRIGGER IF EXISTS `tr__post_tag__ai`;
 SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='';
 DELIMITER //
 CREATE TRIGGER `tr__post_tag__ai` AFTER INSERT ON `post_tag` FOR EACH ROW BEGIN
--- 
+--
 -- handles inccrementing the tag when we add a post-tag association,
 --  thereby increasing the number of times the given tag has been used.
--- 
+--
 UPDATE tag_count
 SET amount = amount + 1
 WHERE tag_id = new.tag_id;
 
--- 
+--
 -- updates modification time for posts when new tags are added
 -- currently disabled; might leave the "lmd" column alone to preserve meta-info,
 --  and just have a second "modified" column for reflecting modification date when any related post data changes
--- 
+--
 -- UPDATE post
 -- SET lmd = NOW()
 -- WHERE id = new.post_id;
@@ -338,11 +338,11 @@ DROP TRIGGER IF EXISTS `tr__tag__ai`;
 SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='';
 DELIMITER //
 CREATE TRIGGER `tr__tag__ai` AFTER INSERT ON `tag` FOR EACH ROW BEGIN
--- 
+--
 -- handles initial creation of the tag_count row when we create a new tag;
 --  this table/row handles tracking the tag-use count for performance reasons.
 --  when you're using thirty-plus tags, doing counts on every single one...ugh.
--- 
+--
 INSERT INTO tag_count (
 	tag_id
 	, amount
@@ -359,21 +359,21 @@ SET SQL_MODE=@OLDTMP_SQL_MODE;
 DROP VIEW IF EXISTS `vw_aliased_tags`;
 -- Removing temporary table and create final VIEW structure
 DROP TABLE IF EXISTS `vw_aliased_tags`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`192.168.1.%` SQL SECURITY DEFINER VIEW `vw_aliased_tags` AS select `t`.`id` AS `id`,`t`.`title` AS `title`,`t`.`type` AS `type`,`a`.`title` AS `old_tag`,`tc`.`amount` AS `tag_count` from ((`tag` `t` left join `tag_alias` `a` on((`t`.`id` = `a`.`tag_id`))) left join `tag_count` `tc` on((`tc`.`tag_id` = `a`.`tag_id`)));
+CREATE ALGORITHM=UNDEFINED VIEW `vw_aliased_tags` AS select `t`.`id` AS `id`,`t`.`title` AS `title`,`t`.`type` AS `type`,`a`.`title` AS `old_tag`,`tc`.`amount` AS `tag_count` from ((`tag` `t` left join `tag_alias` `a` on((`t`.`id` = `a`.`tag_id`))) left join `tag_count` `tc` on((`tc`.`tag_id` = `a`.`tag_id`)));
 
 
 -- Dumping structure for view homebooru.vw_post
 DROP VIEW IF EXISTS `vw_post`;
 -- Removing temporary table and create final VIEW structure
 DROP TABLE IF EXISTS `vw_post`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`192.168.1.%` SQL SECURITY DEFINER VIEW `vw_post` AS select `p`.`id` AS `id`,`p`.`crd` AS `crd`,`p`.`lmd` AS `lmd`,`p`.`status` AS `status`,`p`.`rating` AS `rating`,`p`.`source` AS `source`,`p`.`submitter` AS `submitter`,`p`.`md5` AS `md5`,`p`.`sha1` AS `sha1`,`p`.`sha256` AS `sha256`,`bi`.`filename` AS `bi_filename`,`bi`.`md5` AS `bi_md5`,`bi`.`sha1` AS `bi_sha1`,`bi`.`width` AS `bi_width`,`bi`.`height` AS `bi_height`,`bi`.`size` AS `bi_size`,`si`.`filename` AS `si_filename`,`si`.`md5` AS `si_md5`,`si`.`sha1` AS `si_sha1`,`si`.`width` AS `si_width`,`si`.`height` AS `si_height`,`si`.`size` AS `si_size`,`ti`.`filename` AS `ti_filename`,`ti`.`md5` AS `ti_md5`,`ti`.`sha1` AS `ti_sha1`,`ti`.`width` AS `ti_width`,`ti`.`height` AS `ti_height`,`ti`.`size` AS `ti_size`,`u`.`type` AS `submitter_type`,`u`.`username` AS `submitter_name` from ((((`post` `p` left join `image` `bi` on(((`bi`.`type` = 1) and (`p`.`id` = `bi`.`post_id`)))) left join `image` `si` on(((`si`.`type` = 1) and (`p`.`id` = `si`.`post_id`)))) left join `image` `ti` on(((`ti`.`type` = 1) and (`p`.`id` = `ti`.`post_id`)))) left join `user` `u` on((`u`.`id` = `p`.`submitter`))) order by `p`.`id` desc;
+CREATE ALGORITHM=UNDEFINED VIEW `vw_post` AS select `p`.`id` AS `id`,`p`.`crd` AS `crd`,`p`.`lmd` AS `lmd`,`p`.`status` AS `status`,`p`.`rating` AS `rating`,`p`.`source` AS `source`,`p`.`submitter` AS `submitter`,`p`.`md5` AS `md5`,`p`.`sha1` AS `sha1`,`p`.`sha256` AS `sha256`,`bi`.`filename` AS `bi_filename`,`bi`.`md5` AS `bi_md5`,`bi`.`sha1` AS `bi_sha1`,`bi`.`width` AS `bi_width`,`bi`.`height` AS `bi_height`,`bi`.`size` AS `bi_size`,`si`.`filename` AS `si_filename`,`si`.`md5` AS `si_md5`,`si`.`sha1` AS `si_sha1`,`si`.`width` AS `si_width`,`si`.`height` AS `si_height`,`si`.`size` AS `si_size`,`ti`.`filename` AS `ti_filename`,`ti`.`md5` AS `ti_md5`,`ti`.`sha1` AS `ti_sha1`,`ti`.`width` AS `ti_width`,`ti`.`height` AS `ti_height`,`ti`.`size` AS `ti_size`,`u`.`type` AS `submitter_type`,`u`.`username` AS `submitter_name` from ((((`post` `p` left join `image` `bi` on(((`bi`.`type` = 1) and (`p`.`id` = `bi`.`post_id`)))) left join `image` `si` on(((`si`.`type` = 1) and (`p`.`id` = `si`.`post_id`)))) left join `image` `ti` on(((`ti`.`type` = 1) and (`p`.`id` = `ti`.`post_id`)))) left join `user` `u` on((`u`.`id` = `p`.`submitter`))) order by `p`.`id` desc;
 
 
 -- Dumping structure for view homebooru.vw_post_tags
 DROP VIEW IF EXISTS `vw_post_tags`;
 -- Removing temporary table and create final VIEW structure
 DROP TABLE IF EXISTS `vw_post_tags`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`192.168.1.%` SQL SECURITY DEFINER VIEW `vw_post_tags` AS select `pt`.`post_id` AS `post_id`,`t`.`id` AS `id`,`t`.`title` AS `title`,`t`.`type` AS `type`,`tc`.`amount` AS `tag_count` from ((`tag` `t` left join `post_tag` `pt` on((`t`.`id` = `pt`.`tag_id`))) left join `tag_count` `tc` on((`tc`.`tag_id` = `pt`.`tag_id`))) group by `pt`.`post_id`,`pt`.`tag_id` order by `t`.`title`,`pt`.`post_id`;
+CREATE ALGORITHM=UNDEFINED VIEW `vw_post_tags` AS select `pt`.`post_id` AS `post_id`,`t`.`id` AS `id`,`t`.`title` AS `title`,`t`.`type` AS `type`,`tc`.`amount` AS `tag_count` from ((`tag` `t` left join `post_tag` `pt` on((`t`.`id` = `pt`.`tag_id`))) left join `tag_count` `tc` on((`tc`.`tag_id` = `pt`.`tag_id`))) group by `pt`.`post_id`,`pt`.`tag_id` order by `t`.`title`,`pt`.`post_id`;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
 /*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
