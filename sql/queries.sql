@@ -141,8 +141,7 @@ WHERE notag.post_id IS NULL
 ;
 
 --
--- meh
---
+-- Rewrite of the select query, courtesy of Meg. :D
 --
 SELECT p.*
 FROM vw_post p
