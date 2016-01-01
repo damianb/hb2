@@ -230,15 +230,45 @@ async.waterfall([
 					}
 				)
 			},
-			tag: function(callback) {
-				// todo - insert into tag table (INSERT IGNORE kind of deal...)
+			elimTags: function() {
+				// todo - eliminate existing tags from list of tags to consider creating
+			},
+			addTags: function(postId, callback) {
+				// todo - insert "nonexistent" tags into tag table
 
 				callback(null)
 			},
-			xref: function(callback) {
-				// todo - insert into post_tag xref table
+			addXrefs: function(callback) {
+				//
+				// here we're actually inserting xrefs into the post_tag table, making the blind assumption that
+				//  we already have the correct tag table entries existing here and that nobody is being left behind
+				//
+				// you know what they say about assumptions - ASSUMPTIONS MAKE THE WORLD GO ROUND! \o/
+				//
+				let placeholders = (Array(file.tags.length).fill('?').join(', '))
+				db.query(util.format(`
+					INSERT IGNORE INTO post_tag (tag_id, post_id)
+					(
+						SELECT t.id, ?
+						FROM tag t
+						WHERE
+							t.title IN(%s)
+							AND t.type <> 6
+					)
+					UNION DISTINCT
+					(
+						SELECT t.id, ?
+						FROM tag t
+						JOIN tag_alias a
+							ON t.id = a.tag_id
+						WHERE
+							a.title IN(%s)
+					)`, postId, placeholders, postId, placeholders), file.tags, function(err, rows) {
+						if(err) return callback(err)
 
-				callback(null)
+						callback(null, postId)
+					}
+				)
 			}
 		}, function(err, res) {
 			if(err) return callback(err)
