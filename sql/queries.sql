@@ -76,19 +76,49 @@ LEFT JOIN tag_count tc
 -- getting tag_ids by tag titles, and resolving tag aliases simultaneously
 --  the output of this query is then fed into the two combined queries.
 --
--- note: can't subquery tags themselves in the combined queries because of tag-resolution problems;
---  if an aliased tag resolves to an already-specified tag, the HAVING COUNT will fail
+-- note: we can't use this in a subquery because of tag-resolution problems;
+--  if an aliased tag /also/ resolves to an already-specified tag (e.g. red_haired and red_hair used, with one aliased to the other), the HAVING COUNT will fail
+--  so we have to query this, then get the count of its results to use in the HAVING COUNT() bit
+--  elsewhere, however, we are able to
 --
 (
 	SELECT t.id as tag_id
 	FROM tag t
 	WHERE
 		t.title IN('aeronaut_sucks', 'aliased_tag', 'more_tags')
-		AND t.type <> 6 -- type 6 = aliased tag (should be destroyed on creation of the alias theoretically)
+		AND t.type <> 6 -- type 6 = aliased tag
+		-- type 6's are kept in the database so that we can identify, on post submission/tag creation, what tags do NOT exist
+		-- so on select, we must explicitly filter them out in order to not obtain incorrect tag_ids
 )
 UNION DISTINCT
 (
 	SELECT t.id as tag_id
+	FROM tag t
+	JOIN tag_alias a
+		ON t.id = a.tag_id
+	WHERE
+		a.title IN('aeronaut_sucks', 'aliased_tag', 'more_tags')
+)
+;
+
+--
+-- Inserting new xrefs based off of only existing tags is much the same.
+--
+INSERT IGNORE INTO post_tag (tag_id, post_id)
+(
+	SELECT t.id as tag_id,
+	1 as post_id
+	FROM tag t
+	WHERE
+		t.title IN('aeronaut_sucks', 'aliased_tag', 'more_tags')
+		AND t.type <> 6 -- type 6 = aliased tag
+		-- type 6's are kept in the database so that we can identify, on post submission/tag creation, what tags do NOT exist
+		-- so on select, we must explicitly filter them out in order to not obtain incorrect tag_ids
+)
+UNION DISTINCT
+(
+	SELECT t.id as tag_id,
+	1 as post_id
 	FROM tag t
 	JOIN tag_alias a
 		ON t.id = a.tag_id

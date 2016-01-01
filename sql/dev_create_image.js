@@ -161,12 +161,12 @@ async.waterfall([
 			return callback('invalid format specified')
 		}
 		file.path = path.join(uploadPath, file.sha256.substr(0,3), file.sha256.substr(3,3))
-		file.fullName = path.join(file.path, file.sha256)
 		file.ext = '.' + file.meta.format.toLowerCase()
+		file.filename = path.join(file.path, file.sha256 + file.ext)
 
 		// copy the file
 		let rs = fs.createReadStream(filename),
-			ws = fs.createWriteStream(file.fullName + file.ext),
+			ws = fs.createWriteStream(file.filename),
 			alreadyCalled = false
 
 		let streamCallback = function(err) {
@@ -174,6 +174,7 @@ async.waterfall([
 					alreadyCalled = true
 					callback(err)
 				} else {
+					hasCreatedFiles['main'] = file.filename
 					callback(null, file)
 				}
 			}
@@ -192,7 +193,8 @@ async.waterfall([
 
 		async.waterfall({
 			post: function(callback) {
-				db.query('INSERT INTO post (status, rating, submitter, md5, sha1, sha256) VALUES (:status, :rating, :submitter, :md5, :sha1, :sha256)',
+				db.query(`INSERT INTO post (status, rating, submitter, md5, sha1, sha256)
+						VALUES (:status, :rating, :submitter, :md5, :sha1, :sha256)`,
 					{
 						status: file.status,
 						rating: file.rating,
@@ -208,9 +210,25 @@ async.waterfall([
 				)
 			},
 			image: function(postId, callback) {
-				// todo - insert into image table
+				db.query(`INSERT INTO image (status, type, post_id, filename, md5, sha1, sha256, width, height, size)
+						VALUES (:status, :type, :postId, :filename, :md5, :sha1, :sha256, :width, :height, :filesize)`,
+					{
+						status: file.status,
+						type: 1, // type 1 = full size image
+						postId: postId,
+						filename: file.sha256 + file.ext,
+						md5: file.md5,
+						sha1: file.sha1,
+						sha256: file.sha256,
+						width: file.meta.width,
+						height: file.meta.height,
+						filesize: file.meta.size
+					}, function(err, rows) {
+						if(err) return callback(err)
 
-				callback(null)
+						callback(null, postId)
+					}
+				)
 			},
 			tag: function(callback) {
 				// todo - insert into tag table (INSERT IGNORE kind of deal...)
