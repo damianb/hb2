@@ -32,14 +32,8 @@ try {
 console.log('loaded dev script - ' + buildString)
 console.log('connecting to database...')
 
-// attempt to connect to the database
-let db = new mariasql({
-	host: config.get('db.host'),
-	port: config.get('db.port'),
-	username: config.get('db.user'),
-	password: config.get('db.password'),
-	db: config.get('db.db'),
-})
+// deliberately using var here
+var db = null
 
 // let uploadPath = config.get('app.uploadPath')
 let uploadPath = path.join(__dirname, '../', 'upload/')
@@ -62,7 +56,31 @@ try {
 	process.exit(1)
 }
 
+// we'll track whether or not files have been copied through this var, in case we need to roll back and unlink these files in case of an error.
+let hasCreatedFiles = {
+	main: false,
+	sample: false,
+	thumb: false
+}
+
 async.waterfall([
+	function(wCallback) {
+		// connect to the database - using a var declared earlier
+		db = new mariasql({
+			host: config.get('db.host'),
+			port: config.get('db.port'),
+			username: config.get('db.user'),
+			password: config.get('db.password'),
+			db: config.get('db.db'),
+		})
+		// todo: probably can just pass wCallback. test this later
+		db.on('ready', function() {
+			wCallback(null)
+		})
+		db.on('error', function(err) {
+			wCallback(err)
+		})
+	},
 	// get various image meta-elements needed for sql inserts
 	function(wCallback) {
 		async.parallel({
@@ -146,23 +164,50 @@ async.waterfall([
 		file.fullName = path.join(file.path, file.sha256)
 		file.ext = '.' + file.meta.format.toLowerCase()
 
-		console.dir(file)
+		// copy the file
+		let rs = fs.createReadStream(filename),
+			ws = fs.createWriteStream(file.fullName + file.ext),
+			alreadyCalled = false
 
-		callback(null, file)
-		// todo copy file into dest
+		let streamCallback = function(err) {
+				if(!alreadyCalled) {
+					alreadyCalled = true
+					callback(err)
+				} else {
+					callback(null, file)
+				}
+			}
+
+		rs.on('error', streamCallback)
+		ws.on('error', streamCallback)
+		ws.on('close', function() {
+			streamCallback(null, file)
+		})
+		rs.pipe(ws)
 	},
 	function(file, wCallback) {
 		// todo
 		// begin sql transaction
 		// filename abc/def/abcdefgeh.ext
 
-		async.parallel({
+		async.waterfall({
 			post: function(callback) {
-				// todo - insert into post table
+				db.query('INSERT INTO post (status, rating, submitter, md5, sha1, sha256) VALUES (:status, :rating, :submitter, :md5, :sha1, :sha256)',
+					{
+						status: file.status,
+						rating: file.rating,
+						submitter: 1, // UID 1 = Anonymous
+						md5: file.md5,
+						sha1: file.sha1,
+						sha256: file.sha256
+					}, function(err, rows) {
+						if(err) return callback(err)
 
-				callback(null)
+						callback(null, rows.info.insertId) // rows.info.insertId will be the post_id of the newly inserted row
+					}
+				)
 			},
-			image: function(callback) {
+			image: function(postId, callback) {
 				// todo - insert into image table
 
 				callback(null)
