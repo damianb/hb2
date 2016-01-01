@@ -41,14 +41,17 @@ ORDER BY p.id DESC
 ;
 
 --
--- vw_post_tags - gets all the tags for a post
+-- vw_post_tags - gets all the tags for a post and their tag counts
 --
 SELECT
 	pt.post_id
 	, t.*
+	, tc.amount AS tag_count
 FROM tag t
 LEFT JOIN post_tag pt
 	ON t.id = pt.tag_id
+LEFT JOIN tag_count tc
+	ON tc.tag_id = pt.tag_id
 -- WHERE pt.post_id in(%s)
 GROUP BY pt.post_id, pt.tag_id
 ORDER BY t.title ASC, pt.post_id ASC
@@ -60,9 +63,12 @@ ORDER BY t.title ASC, pt.post_id ASC
 SELECT
 	t.*
 	, a.title AS old_tag
+	, tc.amount AS tag_count
 FROM tag t
 LEFT JOIN tag_alias a
 	ON t.id = a.tag_id
+LEFT JOIN tag_count tc
+	ON tc.tag_id = a.tag_id
 -- WHERE a.title in(%s)
 ;
 
@@ -159,10 +165,12 @@ AND p.id NOT IN(
 --
 -- Resync tag counts
 --
-UPDATE tag
-SET count = (
+INSERT IGNORE INTO tag_count (tag_id, amount)
+SELECT id, 0 FROM tag;
+UPDATE tag_count
+SET amount = (
 	SELECT COUNT(id)
 	FROM post_tag
-	WHERE tag_id = tag.id
+	WHERE tag_id = tag_count.tag_id
 )
 ;

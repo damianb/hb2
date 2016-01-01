@@ -136,7 +136,6 @@ CREATE TABLE IF NOT EXISTS `tag` (
   `crd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the row was created.',
   `type` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT 'Tag type.',
   `title` varchar(200) NOT NULL COMMENT 'Tag text.',
-  `count` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'How many times this tag has been used.',
   PRIMARY KEY (`id`),
   UNIQUE KEY `text` (`title`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Tags for images.';
@@ -155,6 +154,21 @@ CREATE TABLE IF NOT EXISTS `tag_alias` (
   UNIQUE KEY `tag_id` (`tag_id`),
   CONSTRAINT `fk_ta__tag_id` FOREIGN KEY (`tag_id`) REFERENCES `tag` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Tag alias resolution table.';
+
+-- Data exporting was unselected.
+
+
+-- Dumping structure for table homebooru.tag_count
+DROP TABLE IF EXISTS `tag_count`;
+CREATE TABLE IF NOT EXISTS `tag_count` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Tag count ID.',
+  `crd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the row was created.',
+  `tag_id` int(10) unsigned NOT NULL COMMENT 'Tag ID for the tag this count is for.',
+  `amount` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'How many times has the tag been used? (Quick way to handle counts!)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `tag_id` (`tag_id`),
+  CONSTRAINT `fk_tc__tag_id` FOREIGN KEY (`tag_id`) REFERENCES `tag` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Counters for tag usage.  No, not joking.  \r\n\r\nIt''s a table of its own for performance reasons.';
 
 -- Data exporting was unselected.
 
@@ -211,8 +225,8 @@ CREATE TABLE `vw_aliased_tags` (
 	`crd` TIMESTAMP NOT NULL COMMENT 'When the row was created.',
 	`type` TINYINT(1) UNSIGNED NOT NULL COMMENT 'Tag type.',
 	`title` VARCHAR(200) NOT NULL COMMENT 'Tag text.' COLLATE 'utf8_general_ci',
-	`count` INT(10) UNSIGNED NOT NULL COMMENT 'How many times this tag has been used.',
-	`old_tag` VARCHAR(200) NULL COMMENT 'Tag text to alias.' COLLATE 'utf8_general_ci'
+	`old_tag` VARCHAR(200) NULL COMMENT 'Tag text to alias.' COLLATE 'utf8_general_ci',
+	`tag_count` INT(10) UNSIGNED NULL COMMENT 'How many times has the tag been used? (Quick way to handle counts!)'
 ) ENGINE=MyISAM;
 
 
@@ -262,7 +276,7 @@ CREATE TABLE `vw_post_tags` (
 	`crd` TIMESTAMP NOT NULL COMMENT 'When the row was created.',
 	`type` TINYINT(1) UNSIGNED NOT NULL COMMENT 'Tag type.',
 	`title` VARCHAR(200) NOT NULL COMMENT 'Tag text.' COLLATE 'utf8_general_ci',
-	`count` INT(10) UNSIGNED NOT NULL COMMENT 'How many times this tag has been used.'
+	`tag_count` INT(10) UNSIGNED NULL COMMENT 'How many times has the tag been used? (Quick way to handle counts!)'
 ) ENGINE=MyISAM;
 
 
@@ -275,9 +289,9 @@ CREATE TRIGGER `tr__post_tag__ad` AFTER DELETE ON `post_tag` FOR EACH ROW BEGIN
 -- handles decrementing the tag when we drop a post-tag association,
 --  thereby decreasing the number of times the given tag has been used.
 --
-UPDATE tag
-SET count = count - 1
-WHERE id = old.tag_id;
+UPDATE tag_count
+SET amount = amount - 1
+WHERE tag_id = old.tag_id;
 
 --
 -- updates modification time for posts when tags are removed
@@ -300,9 +314,9 @@ CREATE TRIGGER `tr__post_tag__ai` AFTER INSERT ON `post_tag` FOR EACH ROW BEGIN
 -- handles inccrementing the tag when we add a post-tag association,
 --  thereby increasing the number of times the given tag has been used.
 --
-UPDATE tag
-SET count = count + 1
-WHERE id = new.tag_id;
+UPDATE tag_count
+SET amount = amount + 1
+WHERE tag_id = new.tag_id;
 
 --
 -- updates modification time for posts when new tags are added
@@ -351,11 +365,34 @@ DELIMITER ;
 SET SQL_MODE=@OLDTMP_SQL_MODE;
 
 
+-- Dumping structure for trigger homebooru.tr__tag__ai
+DROP TRIGGER IF EXISTS `tr__tag__ai`;
+SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
+DELIMITER //
+CREATE TRIGGER `tr__tag__ai` AFTER INSERT ON `tag` FOR EACH ROW BEGIN
+-- handles initial creation of the tag_count row when we create a new tag;
+--  this table/row handles tracking the tag-use count for performance reasons.
+--  when you're using thirty-plus tags, doing counts on every single one...ugh.
+--
+-- cannot be merged into tag table due to conflicts when creating new
+--  post_tag xrefs; the post_tag triggers seem to cause conflicts then
+INSERT INTO tag_count (
+	tag_id
+	, amount
+) VALUES (
+	NEW.id
+	, 0
+);
+END//
+DELIMITER ;
+SET SQL_MODE=@OLDTMP_SQL_MODE;
+
+
 -- Dumping structure for view homebooru.vw_aliased_tags
 DROP VIEW IF EXISTS `vw_aliased_tags`;
 -- Removing temporary table and create final VIEW structure
 DROP TABLE IF EXISTS `vw_aliased_tags`;
-CREATE ALGORITHM=UNDEFINED VIEW `vw_aliased_tags` AS select `t`.`id` AS `id`,`t`.`crd` AS `crd`,`t`.`type` AS `type`,`t`.`title` AS `title`,`t`.`count` AS `count`,`a`.`title` AS `old_tag` from (`tag` `t` left join `tag_alias` `a` on((`t`.`id` = `a`.`tag_id`)));
+CREATE ALGORITHM=UNDEFINED VIEW `vw_aliased_tags` AS select `t`.`id` AS `id`,`t`.`crd` AS `crd`,`t`.`type` AS `type`,`t`.`title` AS `title`,`a`.`title` AS `old_tag`,`tc`.`amount` AS `tag_count` from ((`tag` `t` left join `tag_alias` `a` on((`t`.`id` = `a`.`tag_id`))) left join `tag_count` `tc` on((`tc`.`tag_id` = `a`.`tag_id`)));
 
 
 -- Dumping structure for view homebooru.vw_post
@@ -369,7 +406,7 @@ CREATE ALGORITHM=UNDEFINED VIEW `vw_post` AS select `p`.`id` AS `id`,`p`.`crd` A
 DROP VIEW IF EXISTS `vw_post_tags`;
 -- Removing temporary table and create final VIEW structure
 DROP TABLE IF EXISTS `vw_post_tags`;
-CREATE ALGORITHM=UNDEFINED VIEW `vw_post_tags` AS select `pt`.`post_id` AS `post_id`,`t`.`id` AS `id`,`t`.`crd` AS `crd`,`t`.`type` AS `type`,`t`.`title` AS `title`,`t`.`count` AS `count` from (`tag` `t` left join `post_tag` `pt` on((`t`.`id` = `pt`.`tag_id`))) group by `pt`.`post_id`,`pt`.`tag_id` order by `t`.`title`,`pt`.`post_id`;
+CREATE ALGORITHM=UNDEFINED VIEW `vw_post_tags` AS select `pt`.`post_id` AS `post_id`,`t`.`id` AS `id`,`t`.`crd` AS `crd`,`t`.`type` AS `type`,`t`.`title` AS `title`,`tc`.`amount` AS `tag_count` from ((`tag` `t` left join `post_tag` `pt` on((`t`.`id` = `pt`.`tag_id`))) left join `tag_count` `tc` on((`tc`.`tag_id` = `pt`.`tag_id`))) group by `pt`.`post_id`,`pt`.`tag_id` order by `t`.`title`,`pt`.`post_id`;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
 /*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

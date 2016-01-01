@@ -54,23 +54,23 @@ INSERT INTO `post_tag` (`id`, `crd`, `post_id`, `tag_id`) VALUES
 	(2, '2015-12-06 11:19:39', 1, 3),
 	(3, '2015-12-06 11:19:39', 2, 1),
 	(4, '2015-12-06 11:19:39', 2, 2),
-	(5, '2015-12-06 11:19:39', 1, 6),
 	(6, '2015-12-06 11:19:39', 1, 8),
-	(7, '2015-12-06 11:19:39', 1, 5);
+	(7, '2015-12-06 11:19:39', 1, 5),
+	(15, '2016-01-01 10:30:41', 1, 6);
 /*!40000 ALTER TABLE `post_tag` ENABLE KEYS */;
 
 -- Dumping data for table homebooru.tag: ~8 rows (approximately)
 DELETE FROM `tag`;
 /*!40000 ALTER TABLE `tag` DISABLE KEYS */;
-INSERT INTO `tag` (`id`, `crd`, `type`, `title`, `count`) VALUES
-	(1, '2015-12-06 11:19:07', 1, 'some_tag', 2),
-	(2, '2015-12-06 11:19:07', 2, 'another_tag', 1),
-	(3, '2015-12-06 11:19:07', 2, 'yet_another_tag', 1),
-	(4, '2015-12-06 11:19:07', 6, 'aliased_tag', 0),
-	(5, '2015-12-06 11:19:07', 1, 'yay_tags', 1),
-	(6, '2015-12-06 11:19:07', 2, 'aeronaut_sucks', 1),
-	(7, '2015-12-06 11:19:07', 1, 'whatever', 0),
-	(8, '2015-12-06 11:19:07', 2, 'more_tags', 1);
+INSERT INTO `tag` (`id`, `crd`, `type`, `title`) VALUES
+	(1, '2015-12-06 11:19:07', 1, 'some_tag'),
+	(2, '2015-12-06 11:19:07', 2, 'another_tag'),
+	(3, '2015-12-06 11:19:07', 2, 'yet_another_tag'),
+	(4, '2015-12-06 11:19:07', 6, 'aliased_tag'),
+	(5, '2015-12-06 11:19:07', 1, 'yay_tags'),
+	(6, '2015-12-06 11:19:07', 2, 'aeronaut_sucks'),
+	(7, '2015-12-06 11:19:07', 1, 'whatever'),
+	(8, '2015-12-06 11:19:07', 2, 'more_tags');
 /*!40000 ALTER TABLE `tag` ENABLE KEYS */;
 
 -- Dumping data for table homebooru.tag_alias: ~1 rows (approximately)
@@ -79,6 +79,20 @@ DELETE FROM `tag_alias`;
 INSERT INTO `tag_alias` (`id`, `crd`, `title`, `tag_id`) VALUES
 	(1, '2015-12-06 11:18:15', 'aliased_tag', 1);
 /*!40000 ALTER TABLE `tag_alias` ENABLE KEYS */;
+
+-- Dumping data for table homebooru.tag_count: ~8 rows (approximately)
+DELETE FROM `tag_count`;
+/*!40000 ALTER TABLE `tag_count` DISABLE KEYS */;
+INSERT INTO `tag_count` (`id`, `crd`, `tag_id`, `amount`) VALUES
+	(1, '2016-01-01 10:25:39', 6, 1),
+	(2, '2016-01-01 10:25:39', 4, 0),
+	(3, '2016-01-01 10:25:39', 2, 1),
+	(4, '2016-01-01 10:25:39', 8, 1),
+	(5, '2016-01-01 10:25:39', 1, 2),
+	(6, '2016-01-01 10:25:39', 7, 0),
+	(7, '2016-01-01 10:25:39', 5, 1),
+	(8, '2016-01-01 10:25:39', 3, 1);
+/*!40000 ALTER TABLE `tag_count` ENABLE KEYS */;
 
 -- Dumping data for table homebooru.user: ~1 rows (approximately)
 DELETE FROM `user`;
