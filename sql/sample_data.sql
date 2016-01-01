@@ -1,6 +1,6 @@
 -- --------------------------------------------------------
 -- Host:                         decipher
--- Server version:               10.0.22-MariaDB-log - MariaDB Server
+-- Server version:               10.1.9-MariaDB-log - MariaDB Server
 -- Server OS:                    Linux
 -- HeidiSQL Version:             9.3.0.4984
 -- --------------------------------------------------------
@@ -17,20 +17,20 @@ DELETE FROM `config`;
 -- Dumping data for table homebooru.favorites: ~1 rows (approximately)
 DELETE FROM `favorites`;
 /*!40000 ALTER TABLE `favorites` DISABLE KEYS */;
-INSERT INTO `favorites` (`id`, `crd`, `lmd`, `user_id`, `post_id`) VALUES
-	(1, '2015-11-22 13:46:05', '2015-12-06 11:12:35', 1, 1);
+INSERT INTO `favorites` (`id`, `crd`, `user_id`, `post_id`) VALUES
+	(1, '2015-11-22 13:46:05', 1, 1);
 /*!40000 ALTER TABLE `favorites` ENABLE KEYS */;
 
 -- Dumping data for table homebooru.image: ~6 rows (approximately)
 DELETE FROM `image`;
 /*!40000 ALTER TABLE `image` DISABLE KEYS */;
-INSERT INTO `image` (`id`, `crd`, `lmd`, `type`, `post_id`, `filename`, `md5`, `sha1`, `sha256`, `width`, `height`, `size`) VALUES
-	(1, '2015-12-06 11:22:32', '2015-12-06 11:09:07', 1, 1, 'file.jpg', '0c0d03edf4e145ffd75eafb6d73deaa7', '9414b608df81fbc2563f467df918ca652c899953', '8030404398e6639ff1395dd8e38c782bf6c9e00229adfc54408c967a2e981b51', 10, 10, 1500),
-	(4, '2015-12-06 11:22:32', '2015-12-06 11:09:07', 2, 1, 'file_sm.jpg', '0c0d03edf4e145ffd75eafb6d73deaa7', '9414b608df81fbc2563f467df918ca652c899953', '8030404398e6639ff1395dd8e38c782bf6c9e00229adfc54408c967a2e981b51', 10, 10, 1500),
-	(5, '2015-12-06 11:22:32', '2015-12-06 11:09:07', 3, 1, 'file_th.jpg', '0c0d03edf4e145ffd75eafb6d73deaa7', '9414b608df81fbc2563f467df918ca652c899953', '8030404398e6639ff1395dd8e38c782bf6c9e00229adfc54408c967a2e981b51', 10, 10, 1500),
-	(7, '2015-12-06 11:22:32', '2015-12-06 11:09:07', 1, 2, 'file2.jpg', '0c0d03edf4e145ffd75eafb6d73deaa7', '9414b608df81fbc2563f467df918ca652c899953', '8030404398e6639ff1395dd8e38c782bf6c9e00229adfc54408c967a2e981b51', 20, 20, 1500),
-	(8, '2015-12-06 11:22:32', '2015-12-06 11:09:07', 2, 2, 'file_sm.jpg', '0c0d03edf4e145ffd75eafb6d73deaa7', '9414b608df81fbc2563f467df918ca652c899953', '8030404398e6639ff1395dd8e38c782bf6c9e00229adfc54408c967a2e981b51', 20, 20, 1500),
-	(9, '2015-12-06 11:22:32', '2015-12-06 11:09:07', 3, 2, 'file_th.jpg', '0c0d03edf4e145ffd75eafb6d73deaa7', '9414b608df81fbc2563f467df918ca652c899953', '8030404398e6639ff1395dd8e38c782bf6c9e00229adfc54408c967a2e981b51', 20, 20, 1500);
+INSERT INTO `image` (`id`, `crd`, `lmd`, `status`, `type`, `post_id`, `filename`, `md5`, `sha1`, `sha256`, `width`, `height`, `size`) VALUES
+	(1, '2015-12-06 11:22:32', '2015-12-06 11:09:07', 0, 1, 1, 'file.jpg', '0c0d03edf4e145ffd75eafb6d73deaa7', '9414b608df81fbc2563f467df918ca652c899953', '8030404398e6639ff1395dd8e38c782bf6c9e00229adfc54408c967a2e981b51', 10, 10, 1500),
+	(4, '2015-12-06 11:22:32', '2015-12-06 11:09:07', 0, 2, 1, 'file_sm.jpg', '0c0d03edf4e145ffd75eafb6d73deaa7', '9414b608df81fbc2563f467df918ca652c899953', '8030404398e6639ff1395dd8e38c782bf6c9e00229adfc54408c967a2e981b51', 10, 10, 1500),
+	(5, '2015-12-06 11:22:32', '2015-12-06 11:09:07', 0, 3, 1, 'file_th.jpg', '0c0d03edf4e145ffd75eafb6d73deaa7', '9414b608df81fbc2563f467df918ca652c899953', '8030404398e6639ff1395dd8e38c782bf6c9e00229adfc54408c967a2e981b51', 10, 10, 1500),
+	(7, '2015-12-06 11:22:32', '2015-12-06 11:09:07', 0, 1, 2, 'file2.jpg', '0c0d03edf4e145ffd75eafb6d73deaa7', '9414b608df81fbc2563f467df918ca652c899953', '8030404398e6639ff1395dd8e38c782bf6c9e00229adfc54408c967a2e981b51', 20, 20, 1500),
+	(8, '2015-12-06 11:22:32', '2015-12-06 11:09:07', 0, 2, 2, 'file_sm.jpg', '0c0d03edf4e145ffd75eafb6d73deaa7', '9414b608df81fbc2563f467df918ca652c899953', '8030404398e6639ff1395dd8e38c782bf6c9e00229adfc54408c967a2e981b51', 20, 20, 1500),
+	(9, '2015-12-06 11:22:32', '2015-12-06 11:09:07', 0, 3, 2, 'file_th.jpg', '0c0d03edf4e145ffd75eafb6d73deaa7', '9414b608df81fbc2563f467df918ca652c899953', '8030404398e6639ff1395dd8e38c782bf6c9e00229adfc54408c967a2e981b51', 20, 20, 1500);
 /*!40000 ALTER TABLE `image` ENABLE KEYS */;
 
 -- Dumping data for table homebooru.post: ~2 rows (approximately)
@@ -49,50 +49,36 @@ DELETE FROM `post_audit`;
 -- Dumping data for table homebooru.post_tag: ~7 rows (approximately)
 DELETE FROM `post_tag`;
 /*!40000 ALTER TABLE `post_tag` DISABLE KEYS */;
-INSERT INTO `post_tag` (`id`, `crd`, `lmd`, `post_id`, `tag_id`) VALUES
-	(1, '2015-12-06 11:19:39', '2015-12-06 11:13:39', 1, 1),
-	(2, '2015-12-06 11:19:39', '2015-12-06 11:13:39', 1, 3),
-	(3, '2015-12-06 11:19:39', '2015-12-06 11:13:39', 2, 1),
-	(4, '2015-12-06 11:19:39', '2015-12-06 11:13:39', 2, 2),
-	(5, '2015-12-06 11:19:39', '2015-12-06 11:13:39', 1, 6),
-	(6, '2015-12-06 11:19:39', '2015-12-06 11:13:39', 1, 8),
-	(7, '2015-12-06 11:19:39', '2015-12-06 11:13:39', 1, 5);
+INSERT INTO `post_tag` (`id`, `crd`, `post_id`, `tag_id`) VALUES
+	(1, '2015-12-06 11:19:39', 1, 1),
+	(2, '2015-12-06 11:19:39', 1, 3),
+	(3, '2015-12-06 11:19:39', 2, 1),
+	(4, '2015-12-06 11:19:39', 2, 2),
+	(5, '2015-12-06 11:19:39', 1, 6),
+	(6, '2015-12-06 11:19:39', 1, 8),
+	(7, '2015-12-06 11:19:39', 1, 5);
 /*!40000 ALTER TABLE `post_tag` ENABLE KEYS */;
 
 -- Dumping data for table homebooru.tag: ~8 rows (approximately)
 DELETE FROM `tag`;
 /*!40000 ALTER TABLE `tag` DISABLE KEYS */;
-INSERT INTO `tag` (`id`, `crd`, `lmd`, `title`, `type`) VALUES
-	(1, '2015-12-06 11:19:07', '2015-12-06 11:14:07', 'some_tag', 1),
-	(2, '2015-12-06 11:19:07', '2015-12-06 11:14:07', 'another_tag', 2),
-	(3, '2015-12-06 11:19:07', '2015-12-06 11:14:07', 'yet_another_tag', 2),
-	(4, '2015-12-06 11:19:07', '2015-12-06 11:14:07', 'aliased_tag', 6),
-	(5, '2015-12-06 11:19:07', '2015-12-06 11:14:07', 'yay_tags', 1),
-	(6, '2015-12-06 11:19:07', '2015-12-06 11:14:07', 'aeronaut_sucks', 2),
-	(7, '2015-12-06 11:19:07', '2015-12-06 11:14:07', 'whatever', 1),
-	(8, '2015-12-06 11:19:07', '2015-12-06 11:14:07', 'more_tags', 2);
+INSERT INTO `tag` (`id`, `crd`, `type`, `title`, `count`) VALUES
+	(1, '2015-12-06 11:19:07', 1, 'some_tag', 2),
+	(2, '2015-12-06 11:19:07', 2, 'another_tag', 1),
+	(3, '2015-12-06 11:19:07', 2, 'yet_another_tag', 1),
+	(4, '2015-12-06 11:19:07', 6, 'aliased_tag', 0),
+	(5, '2015-12-06 11:19:07', 1, 'yay_tags', 1),
+	(6, '2015-12-06 11:19:07', 2, 'aeronaut_sucks', 1),
+	(7, '2015-12-06 11:19:07', 1, 'whatever', 0),
+	(8, '2015-12-06 11:19:07', 2, 'more_tags', 1);
 /*!40000 ALTER TABLE `tag` ENABLE KEYS */;
 
 -- Dumping data for table homebooru.tag_alias: ~1 rows (approximately)
 DELETE FROM `tag_alias`;
 /*!40000 ALTER TABLE `tag_alias` DISABLE KEYS */;
-INSERT INTO `tag_alias` (`id`, `crd`, `lmd`, `title`, `tag_id`) VALUES
-	(1, '2015-12-06 11:18:15', '2015-12-06 11:14:29', 'aliased_tag', 1);
+INSERT INTO `tag_alias` (`id`, `crd`, `title`, `tag_id`) VALUES
+	(1, '2015-12-06 11:18:15', 'aliased_tag', 1);
 /*!40000 ALTER TABLE `tag_alias` ENABLE KEYS */;
-
--- Dumping data for table homebooru.tag_count: ~8 rows (approximately)
-DELETE FROM `tag_count`;
-/*!40000 ALTER TABLE `tag_count` DISABLE KEYS */;
-INSERT INTO `tag_count` (`id`, `crd`, `lmd`, `tag_id`, `amount`) VALUES
-	(1, '2015-12-06 11:17:46', '2015-12-06 11:14:48', 1, 2),
-	(2, '2015-12-06 11:17:46', '2015-12-06 11:14:48', 2, 1),
-	(3, '2015-12-06 11:17:46', '2015-12-06 11:14:48', 3, 1),
-	(4, '2015-12-06 11:17:46', '2015-12-06 11:14:48', 4, 0),
-	(5, '2015-12-06 11:17:46', '2015-12-06 11:14:48', 5, 1),
-	(6, '2015-12-06 11:17:46', '2015-12-06 11:14:48', 6, 1),
-	(7, '2015-12-06 11:17:46', '2015-12-06 11:14:48', 7, 0),
-	(8, '2015-12-06 11:17:46', '2015-12-06 11:14:48', 8, 1);
-/*!40000 ALTER TABLE `tag_count` ENABLE KEYS */;
 
 -- Dumping data for table homebooru.user: ~1 rows (approximately)
 DELETE FROM `user`;
