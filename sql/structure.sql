@@ -1,6 +1,6 @@
 -- --------------------------------------------------------
 -- Host:                         decipher
--- Server version:               10.0.22-MariaDB-log - MariaDB Server
+-- Server version:               10.1.9-MariaDB-log - MariaDB Server
 -- Server OS:                    Linux
 -- HeidiSQL Version:             9.3.0.4984
 -- --------------------------------------------------------
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS `config` (
   `name` varchar(128) NOT NULL COMMENT 'Configuration entry name',
   `crd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the row was created.',
   `lmd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the row was last modified.',
-  `type` tinyint(3) unsigned NOT NULL COMMENT 'Configuration entry type - string or numeric?',
+  `type` tinyint(1) unsigned NOT NULL COMMENT 'Configuration entry type - string or numeric?',
   `str_value` varchar(1024) DEFAULT NULL COMMENT 'String value for string-type config entries.',
   `int_value` int(11) DEFAULT NULL COMMENT 'Integer value for numeric-type entries.',
   `live` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '(What this was for currently escapes me.)',
@@ -31,7 +31,6 @@ DROP TABLE IF EXISTS `favorites`;
 CREATE TABLE IF NOT EXISTS `favorites` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Favorite entry ID.',
   `crd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the row was created.',
-  `lmd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the row was last modified.',
   `user_id` int(10) unsigned NOT NULL COMMENT 'Who is this a favorite for?',
   `post_id` int(10) unsigned NOT NULL COMMENT 'What post is favorited?',
   PRIMARY KEY (`id`),
@@ -50,6 +49,7 @@ CREATE TABLE IF NOT EXISTS `image` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Image ID.',
   `crd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the row was created.',
   `lmd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the row was last modified.',
+  `status` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT 'Status of the image, enum.',
   `type` int(1) unsigned NOT NULL COMMENT 'What type of image is this? Full image, smaller image, thumbnail?',
   `post_id` int(10) unsigned NOT NULL COMMENT 'The post this image belongs to.',
   `filename` varchar(300) NOT NULL COMMENT 'The filename for the image (actual filesystem filename).',
@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS `post` (
   PRIMARY KEY (`id`),
   KEY `fk_post__submitter` (`submitter`),
   KEY `status` (`status`),
+  KEY `rating` (`rating`),
   CONSTRAINT `fk_post__submitter` FOREIGN KEY (`submitter`) REFERENCES `user` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Post table - contains all generic post data.';
 
@@ -116,7 +117,6 @@ DROP TABLE IF EXISTS `post_tag`;
 CREATE TABLE IF NOT EXISTS `post_tag` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Post-Tag association ID.',
   `crd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the row was created.',
-  `lmd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the row was last modified.',
   `post_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'Post ID to xref.',
   `tag_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'Tag ID to xref.',
   PRIMARY KEY (`id`),
@@ -134,9 +134,9 @@ DROP TABLE IF EXISTS `tag`;
 CREATE TABLE IF NOT EXISTS `tag` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Tag ID.',
   `crd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the row was created.',
-  `lmd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the row was last modified.',
-  `title` varchar(200) NOT NULL COMMENT 'Tag text.',
   `type` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT 'Tag type.',
+  `title` varchar(200) NOT NULL COMMENT 'Tag text.',
+  `count` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'How many times this tag has been used.',
   PRIMARY KEY (`id`),
   UNIQUE KEY `text` (`title`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Tags for images.';
@@ -149,29 +149,12 @@ DROP TABLE IF EXISTS `tag_alias`;
 CREATE TABLE IF NOT EXISTS `tag_alias` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Alias ID.',
   `crd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the row was created.',
-  `lmd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the row was last modified.',
   `title` varchar(200) NOT NULL COMMENT 'Tag text to alias.',
   `tag_id` int(10) unsigned NOT NULL COMMENT 'Tag ID for the resolved tag (alias destination).',
   PRIMARY KEY (`id`),
   UNIQUE KEY `tag_id` (`tag_id`),
   CONSTRAINT `fk_ta__tag_id` FOREIGN KEY (`tag_id`) REFERENCES `tag` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Tag alias resolution table.';
-
--- Data exporting was unselected.
-
-
--- Dumping structure for table homebooru.tag_count
-DROP TABLE IF EXISTS `tag_count`;
-CREATE TABLE IF NOT EXISTS `tag_count` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Tag count ID.',
-  `crd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the row was created.',
-  `lmd` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the row was last modified.',
-  `tag_id` int(10) unsigned NOT NULL COMMENT 'Tag ID for the tag this count is for.',
-  `amount` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'How many times has the tag been used? (Quick way to handle counts!)',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `tag_id` (`tag_id`),
-  CONSTRAINT `fk_tc__tag_id` FOREIGN KEY (`tag_id`) REFERENCES `tag` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Counters for tag usage.  No, not joking.  \r\n\r\nIt''s a table of its own for performance reasons.';
 
 -- Data exporting was unselected.
 
@@ -225,10 +208,11 @@ DROP VIEW IF EXISTS `vw_aliased_tags`;
 -- Creating temporary table to overcome VIEW dependency errors
 CREATE TABLE `vw_aliased_tags` (
 	`id` INT(10) UNSIGNED NOT NULL COMMENT 'Tag ID.',
-	`title` VARCHAR(200) NOT NULL COMMENT 'Tag text.' COLLATE 'utf8_general_ci',
+	`crd` TIMESTAMP NOT NULL COMMENT 'When the row was created.',
 	`type` TINYINT(1) UNSIGNED NOT NULL COMMENT 'Tag type.',
-	`old_tag` VARCHAR(200) NULL COMMENT 'Tag text to alias.' COLLATE 'utf8_general_ci',
-	`tag_count` INT(10) UNSIGNED NULL COMMENT 'How many times has the tag been used? (Quick way to handle counts!)'
+	`title` VARCHAR(200) NOT NULL COMMENT 'Tag text.' COLLATE 'utf8_general_ci',
+	`count` INT(10) UNSIGNED NOT NULL COMMENT 'How many times this tag has been used.',
+	`old_tag` VARCHAR(200) NULL COMMENT 'Tag text to alias.' COLLATE 'utf8_general_ci'
 ) ENGINE=MyISAM;
 
 
@@ -275,29 +259,29 @@ DROP VIEW IF EXISTS `vw_post_tags`;
 CREATE TABLE `vw_post_tags` (
 	`post_id` INT(10) UNSIGNED NULL COMMENT 'Post ID to xref.',
 	`id` INT(10) UNSIGNED NOT NULL COMMENT 'Tag ID.',
-	`title` VARCHAR(200) NOT NULL COMMENT 'Tag text.' COLLATE 'utf8_general_ci',
+	`crd` TIMESTAMP NOT NULL COMMENT 'When the row was created.',
 	`type` TINYINT(1) UNSIGNED NOT NULL COMMENT 'Tag type.',
-	`tag_count` INT(10) UNSIGNED NULL COMMENT 'How many times has the tag been used? (Quick way to handle counts!)'
+	`title` VARCHAR(200) NOT NULL COMMENT 'Tag text.' COLLATE 'utf8_general_ci',
+	`count` INT(10) UNSIGNED NOT NULL COMMENT 'How many times this tag has been used.'
 ) ENGINE=MyISAM;
 
 
 -- Dumping structure for trigger homebooru.tr__post_tag__ad
 DROP TRIGGER IF EXISTS `tr__post_tag__ad`;
-SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='';
+SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
 DELIMITER //
 CREATE TRIGGER `tr__post_tag__ad` AFTER DELETE ON `post_tag` FOR EACH ROW BEGIN
 --
 -- handles decrementing the tag when we drop a post-tag association,
 --  thereby decreasing the number of times the given tag has been used.
 --
-UPDATE tag_count
-SET amount = amount - 1
-WHERE tag_id = old.tag_id;
+UPDATE tag
+SET count = count - 1
+WHERE id = old.tag_id;
 
 --
 -- updates modification time for posts when tags are removed
--- currently disabled; might leave the "lmd" column alone to preserve meta-info,
---  and just have a second "modified" column for reflecting modification date when any related post data changes
+-- currently disabled; will likely use post_audit to track tag addition/removal
 --
 -- UPDATE post
 -- SET lmd = NOW()
@@ -309,21 +293,20 @@ SET SQL_MODE=@OLDTMP_SQL_MODE;
 
 -- Dumping structure for trigger homebooru.tr__post_tag__ai
 DROP TRIGGER IF EXISTS `tr__post_tag__ai`;
-SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='';
+SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
 DELIMITER //
 CREATE TRIGGER `tr__post_tag__ai` AFTER INSERT ON `post_tag` FOR EACH ROW BEGIN
 --
 -- handles inccrementing the tag when we add a post-tag association,
 --  thereby increasing the number of times the given tag has been used.
 --
-UPDATE tag_count
-SET amount = amount + 1
-WHERE tag_id = new.tag_id;
+UPDATE tag
+SET count = count + 1
+WHERE id = new.tag_id;
 
 --
 -- updates modification time for posts when new tags are added
--- currently disabled; might leave the "lmd" column alone to preserve meta-info,
---  and just have a second "modified" column for reflecting modification date when any related post data changes
+-- currently disabled;  will likely use post_audit to track tag addition/removal
 --
 -- UPDATE post
 -- SET lmd = NOW()
@@ -333,23 +316,36 @@ DELIMITER ;
 SET SQL_MODE=@OLDTMP_SQL_MODE;
 
 
--- Dumping structure for trigger homebooru.tr__tag__ai
-DROP TRIGGER IF EXISTS `tr__tag__ai`;
-SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='';
+-- Dumping structure for trigger homebooru.tr__post__ad
+DROP TRIGGER IF EXISTS `tr__post__ad`;
+SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
 DELIMITER //
-CREATE TRIGGER `tr__tag__ai` AFTER INSERT ON `tag` FOR EACH ROW BEGIN
+CREATE TRIGGER `tr__post__ad` AFTER DELETE ON `post` FOR EACH ROW BEGIN
 --
--- handles initial creation of the tag_count row when we create a new tag;
---  this table/row handles tracking the tag-use count for performance reasons.
---  when you're using thirty-plus tags, doing counts on every single one...ugh.
+-- handles decrementing the submissions count for a user when we nuke a post
 --
-INSERT INTO tag_count (
-	tag_id
-	, amount
-) VALUES (
-	NEW.id
-	, 0
-);
+UPDATE user
+SET submissions = submissions - 1
+WHERE id = old.submitter;
+
+END//
+DELIMITER ;
+SET SQL_MODE=@OLDTMP_SQL_MODE;
+
+
+-- Dumping structure for trigger homebooru.tr__post__ai
+DROP TRIGGER IF EXISTS `tr__post__ai`;
+SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
+DELIMITER //
+CREATE TRIGGER `tr__post__ai` AFTER INSERT ON `post` FOR EACH ROW BEGIN
+--
+-- handles incrementing the submissions count for a user when we make a post
+-- (this doesn't cover whether or not it is visible. maybe todo...)
+--
+UPDATE user
+SET submissions = submissions + 1
+WHERE id = new.submitter;
+
 END//
 DELIMITER ;
 SET SQL_MODE=@OLDTMP_SQL_MODE;
@@ -359,7 +355,7 @@ SET SQL_MODE=@OLDTMP_SQL_MODE;
 DROP VIEW IF EXISTS `vw_aliased_tags`;
 -- Removing temporary table and create final VIEW structure
 DROP TABLE IF EXISTS `vw_aliased_tags`;
-CREATE ALGORITHM=UNDEFINED VIEW `vw_aliased_tags` AS select `t`.`id` AS `id`,`t`.`title` AS `title`,`t`.`type` AS `type`,`a`.`title` AS `old_tag`,`tc`.`amount` AS `tag_count` from ((`tag` `t` left join `tag_alias` `a` on((`t`.`id` = `a`.`tag_id`))) left join `tag_count` `tc` on((`tc`.`tag_id` = `a`.`tag_id`)));
+CREATE ALGORITHM=UNDEFINED VIEW `vw_aliased_tags` AS select `t`.`id` AS `id`,`t`.`crd` AS `crd`,`t`.`type` AS `type`,`t`.`title` AS `title`,`t`.`count` AS `count`,`a`.`title` AS `old_tag` from (`tag` `t` left join `tag_alias` `a` on((`t`.`id` = `a`.`tag_id`)));
 
 
 -- Dumping structure for view homebooru.vw_post
@@ -373,7 +369,7 @@ CREATE ALGORITHM=UNDEFINED VIEW `vw_post` AS select `p`.`id` AS `id`,`p`.`crd` A
 DROP VIEW IF EXISTS `vw_post_tags`;
 -- Removing temporary table and create final VIEW structure
 DROP TABLE IF EXISTS `vw_post_tags`;
-CREATE ALGORITHM=UNDEFINED VIEW `vw_post_tags` AS select `pt`.`post_id` AS `post_id`,`t`.`id` AS `id`,`t`.`title` AS `title`,`t`.`type` AS `type`,`tc`.`amount` AS `tag_count` from ((`tag` `t` left join `post_tag` `pt` on((`t`.`id` = `pt`.`tag_id`))) left join `tag_count` `tc` on((`tc`.`tag_id` = `pt`.`tag_id`))) group by `pt`.`post_id`,`pt`.`tag_id` order by `t`.`title`,`pt`.`post_id`;
+CREATE ALGORITHM=UNDEFINED VIEW `vw_post_tags` AS select `pt`.`post_id` AS `post_id`,`t`.`id` AS `id`,`t`.`crd` AS `crd`,`t`.`type` AS `type`,`t`.`title` AS `title`,`t`.`count` AS `count` from (`tag` `t` left join `post_tag` `pt` on((`t`.`id` = `pt`.`tag_id`))) group by `pt`.`post_id`,`pt`.`tag_id` order by `t`.`title`,`pt`.`post_id`;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
 /*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
