@@ -241,7 +241,7 @@ async.waterfall([
 			},
 			elimTags: function(postId, callback) {
 				// finding the tags we don't already have in the database, in order to create them
-				let placehodlers = Array(file.tags.length).fill('?').join(', '),
+				let placeholders = Array(file.tags.length).fill('?').join(', '),
 					tagstoCreate = []
 				db.query(util.format('SELECT title FROM tag WHERE title IN(%s)', placeholders), file.tags, { useArray: true }, function(err, rows) {
 					if(err) return callback(err)
@@ -261,7 +261,8 @@ async.waterfall([
 				for(let i = 0; i < tagsToCreate.length; i++) {
 					placeholders.push('(?, 1)') // tag title placeholder, tag.TYPE.GENERAL
 				}
-				db.query(util.format('INSERT INTO tag (title, type) VALUES %s', placeholders.join(', ')), tagsToCreate, function(err, rows) {
+				placeholders = placeholders.join(', ')
+				db.query(util.format('INSERT INTO tag (title, type) VALUES %s', placeholders, tagsToCreate, function(err, rows) {
 					if(err) return callback(err)
 
 					callback(null, postId)
