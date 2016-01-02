@@ -57,7 +57,8 @@ try {
 }
 
 // we'll track whether or not files have been copied through this var, in case we need to roll back and unlink these files in case of an error.
-let hasCreatedFiles = {
+let rollbackMarkers = {
+	transaction: false,
 	main: false,
 	sample: false,
 	thumb: false
@@ -174,7 +175,7 @@ async.waterfall([
 					alreadyCalled = true
 					callback(err)
 				} else {
-					hasCreatedFiles['main'] = file.filename
+					rollbackMarkers['main'] = file.filename
 					callback(null, file)
 				}
 			}
@@ -186,9 +187,17 @@ async.waterfall([
 		})
 		rs.pipe(ws)
 	},
+	function(file, callback) {
+		// BEGIN TRANSACTION!
+		db.query('START TRANSACTION', function(err, rows) {
+			if(err) return callback(err)
+
+			rollbackMarkers['transaction'] = true
+			callback(null, file)
+		})
+	}
 	function(file, wCallback) {
-		// todo
-		// begin sql transaction
+		// insert image information into the database in a strategic and completely sane manner.
 		// filename abc/def/abcdefgeh.ext
 
 		async.waterfall({
@@ -230,22 +239,43 @@ async.waterfall([
 					}
 				)
 			},
-			elimTags: function() {
-				// todo - eliminate existing tags from list of tags to consider creating
-			},
-			addTags: function(postId, callback) {
-				// todo - insert "nonexistent" tags into tag table
+			elimTags: function(postId, callback) {
+				// finding the tags we don't already have in the database, in order to create them
+				let placehodlers = Array(file.tags.length).fill('?').join(', '),
+					tagstoCreate = []
+				db.query(util.format('SELECT title FROM tag WHERE title IN(%s)', placeholders), file.tags, { useArray: true }, function(err, rows) {
+					if(err) return callback(err)
 
-				callback(null)
+					rows.forEach(function(row) {
+						if(file.tags.indexOf(row[0])){
+							tagsToCreate.push(row[0])
+						}
+					})
+					callback(null, postId, tagsToCreate)
+				})
 			},
-			addXrefs: function(callback) {
+			addTags: function(postId, tagsToCreate, callback) {
+				// in order to handle this...somewhat sanely, we're going to have to dynamically build the VALUES part of the sql statement.
+				// ...not to worry, we're only making placeholders for everything in the end.
+				let placeholders = []
+				for(let i = 0; i < tagsToCreate.length; i++) {
+					placeholders.push('(?, 1)') // tag title placeholder, tag.TYPE.GENERAL
+				}
+				db.query(util.format('INSERT INTO tag (title, type) VALUES %s', placeholders.join(', ')), tagsToCreate, function(err, rows) {
+					if(err) return callback(err)
+
+					callback(null, postId)
+				})
+			},
+			addXrefs: function(postId, callback) {
 				//
 				// here we're actually inserting xrefs into the post_tag table, making the blind assumption that
-				//  we already have the correct tag table entries existing here and that nobody is being left behind
+				//  we already have the correct tag table entries existing here (because of the previous step) and that nobody is being left behind
 				//
 				// you know what they say about assumptions - ASSUMPTIONS MAKE THE WORLD GO ROUND! \o/
 				//
-				let placeholders = (Array(file.tags.length).fill('?').join(', '))
+				let placeholders = Array(file.tags.length).fill('?').join(', '),
+					bindParams = [postId].concat(file.tags).concat(postId).concat(file.tags)
 				db.query(util.format(`
 					INSERT IGNORE INTO post_tag (tag_id, post_id)
 					(
@@ -263,19 +293,18 @@ async.waterfall([
 							ON t.id = a.tag_id
 						WHERE
 							a.title IN(%s)
-					)`, postId, placeholders, postId, placeholders), file.tags, function(err, rows) {
+					)`, placeholders, placeholders), bindParams, function(err, rows) {
 						if(err) return callback(err)
 
 						callback(null, postId)
 					}
 				)
 			}
-		}, function(err, res) {
+		}, function(err, postId) {
 			if(err) return callback(err)
 
-			// the post insert above should result in the return of a postId...hopefully.
-			file.postId = res.postId
-			file.imageId = res.imageId
+			// stuff the postId into the file object, it's ours now
+			file.postId = postId
 
 			wCallback(null, file)
 		})
@@ -310,12 +339,39 @@ async.waterfall([
 		// resize for thumbnail image
 		// insert thumbnail image into image table
 		// filename abc/def/abcdefgeh_thumb.ext
+
+		callback(null, file)
+	},
+	function(file, callback) {
+		// Everything going to plan. Nope, nothing will go wrong at this point.
+		// (famous last words)
+		db.query('COMMIT', function(err, rows) {
+			if(err) return callback(err)
+
+			callback(null, file)
+		})
 	}
 ], function(err, file) {
 	if(err) {
 		console.error(err)
+
+		// "ROLLBACK. OH GOD, ROLLBACK."
+		if(rollbackMarkers['transaction'] === true) {
+			db.query('ROLLBACK')
+		}
+		// destroy created image files if we created them
+		if(rollbackMarkers['main'] !== false) {
+			fs.unlinkSync(rollbackMarkers['main'])
+		}
+		if(rollbackMarkers['sample'] !== false) {
+			fs.unlinkSync(rollbackMarkers['sample'])
+		}
+		if(rollbackMarkers['thumb'] !== false) {
+			fs.unlinkSync(rollbackMarkers['thumb'])
+		}
+
 		process.exit(1)
 	}
 
-	// todo
+	// I...I guess it worked at this point? o_O;
 })
