@@ -320,7 +320,7 @@ WHERE tag_id = new.tag_id;
 
 --
 -- updates modification time for posts when new tags are added
--- currently disabled;  will likely use post_audit to track tag addition/removal
+-- currently disabled; will likely use post_audit to track tag addition/removal
 --
 -- UPDATE post
 -- SET lmd = NOW()
@@ -399,7 +399,7 @@ CREATE ALGORITHM=UNDEFINED VIEW `vw_aliased_tags` AS select `t`.`id` AS `id`,`t`
 DROP VIEW IF EXISTS `vw_post`;
 -- Removing temporary table and create final VIEW structure
 DROP TABLE IF EXISTS `vw_post`;
-CREATE ALGORITHM=UNDEFINED VIEW `vw_post` AS select `p`.`id` AS `id`,`p`.`crd` AS `crd`,`p`.`lmd` AS `lmd`,`p`.`status` AS `status`,`p`.`rating` AS `rating`,`p`.`source` AS `source`,`p`.`submitter` AS `submitter`,`p`.`md5` AS `md5`,`p`.`sha1` AS `sha1`,`p`.`sha256` AS `sha256`,`bi`.`filename` AS `bi_filename`,`bi`.`md5` AS `bi_md5`,`bi`.`sha1` AS `bi_sha1`,`bi`.`width` AS `bi_width`,`bi`.`height` AS `bi_height`,`bi`.`size` AS `bi_size`,`si`.`filename` AS `si_filename`,`si`.`md5` AS `si_md5`,`si`.`sha1` AS `si_sha1`,`si`.`width` AS `si_width`,`si`.`height` AS `si_height`,`si`.`size` AS `si_size`,`ti`.`filename` AS `ti_filename`,`ti`.`md5` AS `ti_md5`,`ti`.`sha1` AS `ti_sha1`,`ti`.`width` AS `ti_width`,`ti`.`height` AS `ti_height`,`ti`.`size` AS `ti_size`,`u`.`type` AS `submitter_type`,`u`.`username` AS `submitter_name` from ((((`post` `p` left join `image` `bi` on(((`bi`.`type` = 1) and (`p`.`id` = `bi`.`post_id`)))) left join `image` `si` on(((`si`.`type` = 1) and (`p`.`id` = `si`.`post_id`)))) left join `image` `ti` on(((`ti`.`type` = 1) and (`p`.`id` = `ti`.`post_id`)))) left join `user` `u` on((`u`.`id` = `p`.`submitter`))) order by `p`.`id` desc;
+CREATE ALGORITHM=UNDEFINED VIEW `vw_post` AS select `p`.`id` AS `id`,`p`.`crd` AS `crd`,`p`.`lmd` AS `lmd`,`p`.`status` AS `status`,`p`.`rating` AS `rating`,`p`.`source` AS `source`,`p`.`submitter` AS `submitter`,`p`.`md5` AS `md5`,`p`.`sha1` AS `sha1`,`p`.`sha256` AS `sha256`,`bi`.`filename` AS `bi_filename`,`bi`.`md5` AS `bi_md5`,`bi`.`sha1` AS `bi_sha1`,`bi`.`width` AS `bi_width`,`bi`.`height` AS `bi_height`,`bi`.`size` AS `bi_size`,`si`.`filename` AS `si_filename`,`si`.`md5` AS `si_md5`,`si`.`sha1` AS `si_sha1`,`si`.`width` AS `si_width`,`si`.`height` AS `si_height`,`si`.`size` AS `si_size`,`ti`.`filename` AS `ti_filename`,`ti`.`md5` AS `ti_md5`,`ti`.`sha1` AS `ti_sha1`,`ti`.`width` AS `ti_width`,`ti`.`height` AS `ti_height`,`ti`.`size` AS `ti_size`,`u`.`type` AS `submitter_type`,`u`.`username` AS `submitter_name` from ((((`post` `p` left join `image` `bi` on(((`bi`.`type` = 1) and (`p`.`id` = `bi`.`post_id`)))) left join `image` `si` on(((`si`.`type` = 2) and (`p`.`id` = `si`.`post_id`)))) left join `image` `ti` on(((`ti`.`type` = 3) and (`p`.`id` = `ti`.`post_id`)))) left join `user` `u` on((`u`.`id` = `p`.`submitter`))) order by `p`.`id` desc;
 
 
 -- Dumping structure for view homebooru.vw_post_tags

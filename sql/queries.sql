@@ -27,10 +27,10 @@ LEFT JOIN image bi
 	ON bi.type = 1
 		AND p.id = bi.post_id
 LEFT JOIN image si
-	ON si.type = 1
+	ON si.type = 2
 		AND p.id = si.post_id
 LEFT JOIN image ti
-	ON ti.type = 1
+	ON ti.type = 3
 		AND p.id = ti.post_id
 LEFT JOIN user u
 	ON u.id = p.submitter
