@@ -181,14 +181,14 @@ WHERE p.id IN(
 	FROM post_tag pt
 	INNER JOIN tag t
 		ON t.id = pt.tag_id
-	WHERE t.id IN(1) -- %s
+	WHERE t.id IN(%s)
 	GROUP BY pt.post_id
-	HAVING COUNT(t.id) = 1 -- %d
+	HAVING COUNT(t.id) = %d
 )
 AND p.id NOT IN(
 	SELECT pt.post_id
 	FROM post_tag pt
-	WHERE tag_id IN(2) -- %s
+	WHERE tag_id IN(%s)
 )
 ;
 
