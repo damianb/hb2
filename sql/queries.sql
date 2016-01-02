@@ -24,13 +24,13 @@ SELECT p.*
 	, u.username AS submitter_name
 FROM post p
 LEFT JOIN image bi
-	ON bi.type = 1
+	ON bi.type = 1 -- main image
 		AND p.id = bi.post_id
 LEFT JOIN image si
-	ON si.type = 2
+	ON si.type = 2 -- sample image
 		AND p.id = si.post_id
 LEFT JOIN image ti
-	ON ti.type = 3
+	ON ti.type = 3 -- thumbnail image
 		AND p.id = ti.post_id
 LEFT JOIN user u
 	ON u.id = p.submitter
@@ -45,13 +45,11 @@ ORDER BY p.id DESC
 --
 SELECT
 	pt.post_id
+	, COUNT(pt.tag_id) as amount
 	, t.*
-	, tc.amount AS tag_count
 FROM tag t
 LEFT JOIN post_tag pt
 	ON t.id = pt.tag_id
-LEFT JOIN tag_count tc
-	ON tc.tag_id = pt.tag_id
 -- WHERE pt.post_id in(%s)
 GROUP BY pt.post_id, pt.tag_id
 ORDER BY t.title ASC, pt.post_id ASC
@@ -63,12 +61,9 @@ ORDER BY t.title ASC, pt.post_id ASC
 SELECT
 	t.*
 	, a.title AS old_tag
-	, tc.amount AS tag_count
 FROM tag t
 LEFT JOIN tag_alias a
 	ON t.id = a.tag_id
-LEFT JOIN tag_count tc
-	ON tc.tag_id = a.tag_id
 -- WHERE a.title in(%s)
 ;
 
@@ -177,30 +172,15 @@ WHERE notag.post_id IS NULL
 SELECT p.*
 FROM vw_post p
 WHERE p.id IN(
-	SELECT DISTINCT pt.post_id
+	SELECT pt.post_id
 	FROM post_tag pt
-	INNER JOIN tag t
-		ON t.id = pt.tag_id
-	WHERE t.id IN(%s)
+	WHERE pt.tag_id IN(%s)
 	GROUP BY pt.post_id
-	HAVING COUNT(t.id) = %d
+	HAVING COUNT(pt.tag_id) = %d
 )
 AND p.id NOT IN(
 	SELECT pt.post_id
 	FROM post_tag pt
-	WHERE tag_id IN(%s)
-)
-;
-
---
--- Resync tag counts
---
-INSERT IGNORE INTO tag_count (tag_id, amount)
-SELECT id, 0 FROM tag;
-UPDATE tag_count
-SET amount = (
-	SELECT COUNT(id)
-	FROM post_tag
-	WHERE tag_id = tag_count.tag_id
+	WHERE pt.tag_id IN(%s)
 )
 ;
