@@ -98,7 +98,7 @@ function findByTags(db, tags, limit, offset) {
 				)
 			`
 
-			placeholders = (Array(tags.pTags.length).fill('?').join(', '))
+			placeholders = Array(tags.pTags.length).fill('?').join(', ')
 			query = util.format(query, placeholders, placeholders)
 			params = [].concat(tags.pTags).concat(tags.pTags)
 			// todo - get pTagIDs, using npm package mariasql
@@ -132,7 +132,7 @@ function findByTags(db, tags, limit, offset) {
 				)
 			`
 
-			placeholders = (Array(tags.nTags.length).fill('?').join(', '))
+			placeholders = Array(tags.nTags.length).fill('?').join(', ')
 			query = util.format(query, placeholders, placeholders)
 			params = [].concat(tags.nTags).concat(tags.nTags)
 			// todo - get nTagIDs, using npm package mariasql
@@ -203,8 +203,8 @@ function findByTagIDs(db, pTagIDs, nTagIDs, mTags, limit, offset) {
 		// yes, this nTags.length is being used directly in-query.
 		// it's an int, will always be an int, and should not be worred about.
 		queryBody = util.format(queryBody,
-			(Array(nTagIDs.length).fill('?').join(', ')),
-			(Array(pTagIDs.length).fill('?').join(', ')),
+			Array(nTagIDs.length).fill('?').join(', '),
+			Array(pTagIDs.length).fill('?').join(', '),
 			parseInt(nTags.length),
 			metaTags.sql
 		)
@@ -231,7 +231,7 @@ function findByTagIDs(db, pTagIDs, nTagIDs, mTags, limit, offset) {
 		}
 
 		queryBody = util.format(queryBody,
-			(Array(pTagIDs.length).fill('?').join(', ')),
+			Array(pTagIDs.length).fill('?').join(', '),
 			metaTags.sql,
 			parseInt(nTags.length)
 		)
@@ -258,8 +258,8 @@ function findByTagIDs(db, pTagIDs, nTagIDs, mTags, limit, offset) {
 		}
 
 		queryBody = util.format(queryBody,
-			(Array(nTagIDs.length).fill('?').join(', ')),
-			(Array(pTagIDs.length).fill('?').join(', ')),
+			Array(nTagIDs.length).fill('?').join(', '),
+			Array(pTagIDs.length).fill('?').join(', '),
 			parseInt(nTags.length),
 			metaTags.sql
 		)
