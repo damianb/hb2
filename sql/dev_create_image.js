@@ -262,7 +262,7 @@ async.waterfall([
 					placeholders.push('(?, 1)') // tag title placeholder, tag.TYPE.GENERAL
 				}
 				placeholders = placeholders.join(', ')
-				db.query(util.format('INSERT INTO tag (title, type) VALUES %s', placeholders, tagsToCreate, function(err, rows) {
+				db.query(util.format('INSERT INTO tag (title, type) VALUES %s', placeholders), tagsToCreate, function(err, rows) {
 					if(err) return callback(err)
 
 					callback(null, postId)
