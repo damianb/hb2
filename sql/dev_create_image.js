@@ -103,6 +103,7 @@ async.waterfall([
 				hash.setEncoding('hex')
 
 				let fd = fs.createReadStream(filename)
+				fd.on('error', callback)
 				fd.on('end', function() {
 					hash.end()
 					callback(null, hash.read())
@@ -114,6 +115,7 @@ async.waterfall([
 				hash.setEncoding('hex')
 
 				let fd = fs.createReadStream(filename)
+				fd.on('error', callback)
 				fd.on('end', function() {
 					hash.end()
 					callback(null, hash.read())
@@ -125,6 +127,7 @@ async.waterfall([
 				hash.setEncoding('hex')
 
 				let fd = fs.createReadStream(filename)
+				fd.on('error', callback)
 				fd.on('end', function() {
 					hash.end()
 					callback(null, hash.read())
@@ -134,7 +137,8 @@ async.waterfall([
 			meta: function(callback) {
 				sharp(filename)
 					.metadata(function(err, metadata) {
-						if(err) callback(err)
+						if(err) return callback(err)
+
 						let stats = fs.statSync(filename)
 
 						callback(null, {
@@ -167,24 +171,18 @@ async.waterfall([
 
 		// copy the file
 		let rs = fs.createReadStream(filename),
-			ws = fs.createWriteStream(file.filename),
-			alreadyCalled = false
+			ws = fs.createWriteStream(file.filename)
 
 		let streamCallback = function(err) {
-				if(!alreadyCalled) {
-					alreadyCalled = true
-					callback(err)
-				} else {
-					rollbackMarkers['main'] = file.filename
-					callback(null, file)
-				}
+				if(err) return callback(err)
+
+				rollbackMarkers['main'] = file.filename
+				callback(null, file)
 			}
 
 		rs.on('error', streamCallback)
 		ws.on('error', streamCallback)
-		ws.on('close', function() {
-			streamCallback(null, file)
-		})
+		ws.on('close', streamCallback)
 		rs.pipe(ws)
 	},
 	function(file, callback) {
@@ -316,16 +314,117 @@ async.waterfall([
 		// begin sql transaction
 		// filename abc/def/abcdefgeh_sample.ext
 
-		async.parallel({
-			sharp: function(callback) {
-				// todo - perform sharp resize of image
+		// todo: make this a config option
+		let maxWidth = 800
+		let maxHeight = 800
+		let resizeMode = {
+			w: null,
+			h: null
+		}
+		file.sample = false
+		if(file.meta.width > maxWidth) {
+			resizeMode.w = maxWidth
+		} else if(file.meta.height > maxHeight) {
+			resizeMode.h = maxHeight
+		} else {
+			wCallback(null, file)
+			return
+		}
 
-				callback(null)
+		async.series({
+			sharp: function(callback) {
+				file.sample = {}
+				file.sample.filename = path.join(file.path, file.sha256 + '_sample' + file.ext)
+				let streamCallback = function(err) {
+					if(err) return callback(err)
+
+					rollbackMarkers['sample'] = file.sample.filename
+					callback(null, file)
+				}
+				let ws = fs.createWriteStream(file.sample.filename)
+				ws.on('error', streamCallback)
+				ws.on('close', streamCallback)
+
+				let sampleImageStream = sharp(filename)
+					.resize(resizeMode.w, resizeMode.h)
+					.on('error', streamCallback)
+					.pipe(ws)
+			},
+			md5: function(callback) {
+				let hash = crypto.createHash('md5')
+				hash.setEncoding('hex')
+
+				let fd = fs.createReadStream(file.sample.filename)
+				fd.on('error', callback)
+				fd.on('end', function() {
+					hash.end()
+					file.sample.md5 = hash.read()
+					callback()
+				})
+				fd.pipe(hash)
+			},
+			sha1: function(callback) {
+				let hash = crypto.createHash('sha1')
+				hash.setEncoding('hex')
+
+				let fd = fs.createReadStream(file.sample.filename)
+				fd.on('error', callback)
+				fd.on('end', function() {
+					hash.end()
+					file.sample.sha1 = hash.read()
+					callback()
+				})
+				fd.pipe(hash)
+			},
+			sha256: function(callback) {
+				let hash = crypto.createHash('sha256')
+				hash.setEncoding('hex')
+
+				let fd = fs.createReadStream(file.sample.filename)
+				fd.on('error', callback)
+				fd.on('end', function() {
+					hash.end()
+					file.sample.sha256 = hash.read()
+					callback()
+				})
+				fd.pipe(hash)
+			},
+			meta: function(callback) {
+				sharp(file.sample.filename)
+					.metadata(function(err, metadata) {
+						if(err) return callback(err)
+						let stats = fs.statSync(file.sample.filename)
+
+						file.sample.meta = {
+							width: metadata.width,
+							height: metadata.height,
+							format: metadata.format,
+							size: stats.size // size in bytes
+						}
+						callback()
+					})
 			},
 			image: function(callback) {
 				// todo - insert into image table
+				db.query(`INSERT INTO image (status, type, post_id, filename, md5, sha1, sha256, width, height, size)
+						VALUES (:status, :type, :postId, :filename, :md5, :sha1, :sha256, :width, :height, :filesize)`,
+					{
+						status: file.status,
+						type: 2, // type 2 = sample size image
+						postId: postId,
+						filename: file.sha256 + file.ext,
+						md5: file.md5,
+						sha1: file.sha1,
+						sha256: file.sha256,
+						width: file.meta.width,
+						height: file.meta.height,
+						filesize: file.meta.size
+					}, function(err, rows) {
+						if(err) return callback(err)
 
-				callback(null)
+						callback(null, postId)
+					}
+				)
 			}
 		}, function(err, res) {
 			if(err) return callback(err)
