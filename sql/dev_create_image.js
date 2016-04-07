@@ -322,13 +322,19 @@ async.waterfall([
 			h: null
 		}
 		file.sample = false
-		if(file.meta.width > maxWidth) {
+		if(file.meta.width > maxWidth && file.meta.height > maxHeight) {
+			// we'll use whichever is bigger to determine the resize
+			if(file.meta.width > file.meta.height) {
+				resizeMode.w = maxWidth
+			} else {
+				resizeMode.h = maxHeight
+			}
+		} else if(file.meta.width > maxWidth) {
 			resizeMode.w = maxWidth
 		} else if(file.meta.height > maxHeight) {
 			resizeMode.h = maxHeight
 		} else {
-			wCallback(null, file)
-			return
+			return wCallback(null, file)
 		}
 
 		async.series({
@@ -350,7 +356,67 @@ async.waterfall([
 					.on('error', streamCallback)
 					.pipe(ws)
 			},
-			md5: function(callback) {
+			info: function(innerCallback) {
+				async.parallel({
+					md5: function(callback) {
+						let hash = crypto.createHash('md5')
+						hash.setEncoding('hex')
+
+						let fd = fs.createReadStream(filename)
+						fd.on('error', callback)
+						fd.on('end', function() {
+							hash.end()
+							callback(null, hash.read())
+						})
+						fd.pipe(hash)
+					},
+					sha1: function(callback) {
+						let hash = crypto.createHash('sha1')
+						hash.setEncoding('hex')
+
+						let fd = fs.createReadStream(filename)
+						fd.on('error', callback)
+						fd.on('end', function() {
+							hash.end()
+							callback(null, hash.read())
+						})
+						fd.pipe(hash)
+					},
+					sha256: function(callback) {
+						let hash = crypto.createHash('sha256')
+						hash.setEncoding('hex')
+
+						let fd = fs.createReadStream(filename)
+						fd.on('error', callback)
+						fd.on('end', function() {
+							hash.end()
+							callback(null, hash.read())
+						})
+						fd.pipe(hash)
+					},
+					meta: function(callback) {
+						sharp(filename)
+							.metadata(function(err, metadata) {
+								if(err) return callback(err)
+
+								let stats = fs.statSync(filename)
+
+								callback(null, {
+									width: metadata.width,
+									height: metadata.height,
+									format: metadata.format,
+									size: stats.size // size in bytes
+								})
+							})
+					}
+				}, function(err, info) {
+					if(err) return innerCallback(err)
+					// todo
+					innerCallback(null)
+				})
+
+
+			/*
 				let hash = crypto.createHash('md5')
 				hash.setEncoding('hex')
 
@@ -403,6 +469,7 @@ async.waterfall([
 						}
 						callback()
 					})
+				*/
 			},
 			image: function(callback) {
 				// todo - insert into image table
@@ -412,17 +479,17 @@ async.waterfall([
 						status: file.status,
 						type: 2, // type 2 = sample size image
 						postId: postId,
-						filename: file.sha256 + file.ext,
-						md5: file.md5,
-						sha1: file.sha1,
-						sha256: file.sha256,
-						width: file.meta.width,
-						height: file.meta.height,
-						filesize: file.meta.size
+						filename: file.sha256 + '_sample' + file.ext,
+						md5: file.sample.md5,
+						sha1: file.sample.sha1,
+						sha256: file.sample.sha256,
+						width: file.sample.meta.width,
+						height: file.sample.meta.height,
+						filesize: file.sample.meta.size
 					}, function(err, rows) {
 						if(err) return callback(err)
-
-						callback(null, postId)
+						//callback(null, postId)
+						// todo recode
 					}
 				)
 			}
