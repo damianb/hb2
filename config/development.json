@@ -4,7 +4,12 @@
 		"proxied": false,
 		"exposeInfo": true,
 		"cacheTemplates": false,
-		"maxWorkers": 1
+		"maxWorkers": 1,
+		"sampleThreshold": {
+			"width": 1024,
+			"height": 1024,
+			"filesizeKb": 1024
+		}
 	},
 	"db":{
 		"host": "localhost",

@@ -35,6 +35,7 @@ console.log('connecting to database...')
 // deliberately using var here
 var db = null
 
+// todo: remove hardcoded upload path
 // let uploadPath = config.get('app.uploadPath')
 let uploadPath = path.join(__dirname, '../', 'upload/')
 
@@ -302,7 +303,7 @@ async.waterfall([
 				)
 			}
 		}, function(err, postId) {
-			if(err) return callback(err)
+			if(err) return wCallback(err)
 
 			// stuff the postId into the file object, it's ours now
 			file.postId = postId
